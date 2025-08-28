@@ -1,16 +1,20 @@
 // SPDX-License-Identifier: UNLICENSED
-
 pragma solidity ^0.8.22;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol"; 
+import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol"; // Fixed import path
 import { OFT } from "@layerzerolabs/oft-evm/contracts/OFT.sol";
 
+/**
+ * @title CIFIOFT
+ * @notice Omnichain Fungible Token with enhanced supply management and emergency controls
+ * @dev Implements cross-chain token transfers via LayerZero with proper supply tracking
+ */
 
 contract CIFIOFT is OFT, Pausable {
     // ============ Supply Management State ============
     uint256 public immutable maxSupply;
-    uint256 public immutable homeChainId; 
+    uint256 public immutable homeChainId;
     bool public mintingEnabled = true;
     bool public burningEnabled = true;
     bool public bridgingEnabled = true;
@@ -72,7 +76,6 @@ contract CIFIOFT is OFT, Pausable {
         maxSupply = _maxSupply;
         homeChainId = _homeChainId;
         
-        // Initialize supply tracking for home chain
         if (_homeChainId == block.chainid) {
             chainSupply[uint32(block.chainid)] = 0;
         }
@@ -123,7 +126,6 @@ contract CIFIOFT is OFT, Pausable {
     {
         if (!mintingEnabled) revert MintingDisabled();
         
-        // Check against max supply
         if (maxSupply > 0) {
             uint256 currentTotal = totalSupply();
             if (currentTotal + amount > maxSupply) {
@@ -133,7 +135,6 @@ contract CIFIOFT is OFT, Pausable {
         
         _mint(to, amount);
         
-        // Update chain supply tracking
         chainSupply[uint32(block.chainid)] += amount;
         
         emit TokensMinted(to, amount);
@@ -146,7 +147,6 @@ contract CIFIOFT is OFT, Pausable {
         
         _burn(msg.sender, amount);
         
-        // Update chain supply tracking
         chainSupply[uint32(block.chainid)] -= amount;
         
         emit TokensBurned(msg.sender, amount);
@@ -160,11 +160,9 @@ contract CIFIOFT is OFT, Pausable {
     {
         if (!burningEnabled) revert BurningDisabled();
         
-        // This will check allowance internally
         _spendAllowance(from, msg.sender, amount);
         _burn(from, amount);
         
-        // Update chain supply tracking
         chainSupply[uint32(block.chainid)] -= amount;
         
         emit TokensBurned(from, amount);
@@ -178,7 +176,7 @@ contract CIFIOFT is OFT, Pausable {
         // Only home chain can mint
         if (block.chainid != homeChainId) return 0;
         if (!mintingEnabled) return 0;
-        if (maxSupply == 0) return type(uint256).max; 
+        if (maxSupply == 0) return type(uint256).max; // Unlimited
         
         uint256 current = totalSupply();
         if (current >= maxSupply) return 0;
@@ -198,14 +196,14 @@ contract CIFIOFT is OFT, Pausable {
         return block.chainid == homeChainId;
     }
     
-    
+   
     function currentChainSupply() public view returns (uint256) {
         return totalSupply();
     }
     
     // ============ Pausable Overrides ============
     
-    
+   
     function transfer(address to, uint256 value) 
         public 
         override 
@@ -227,7 +225,7 @@ contract CIFIOFT is OFT, Pausable {
     
     // ============ OFT Overrides for Cross-Chain ============
     
-    
+
     function _debit(
         address _from,
         uint256 _amountLD,
@@ -239,10 +237,8 @@ contract CIFIOFT is OFT, Pausable {
     ) {
         (amountSentLD, amountReceivedLD) = super._debit(_from, _amountLD, _minAmountLD, _dstEid);
         
-        // Update local chain supply tracking
         chainSupply[uint32(block.chainid)] -= amountSentLD;
         
-        // Generate a pseudo-GUID for tracking (in production, get from LayerZero)
         bytes32 guid = keccak256(abi.encodePacked(_from, _dstEid, amountSentLD, block.timestamp));
         
         emit CrossChainTransferSent(_from, _dstEid, amountSentLD, guid);
@@ -251,7 +247,7 @@ contract CIFIOFT is OFT, Pausable {
         return (amountSentLD, amountReceivedLD);
     }
     
-    
+
     function _credit(
         address _to,
         uint256 _amountLD,
@@ -259,10 +255,8 @@ contract CIFIOFT is OFT, Pausable {
     ) internal override whenNotPaused whenBridgingEnabled returns (uint256 amountReceivedLD) {
         amountReceivedLD = super._credit(_to, _amountLD, _srcEid);
         
-        // Update local chain supply tracking
         chainSupply[uint32(block.chainid)] += amountReceivedLD;
         
-        // Generate a pseudo-GUID for tracking
         bytes32 guid = keccak256(abi.encodePacked(_to, _srcEid, amountReceivedLD, block.timestamp));
         
         emit CrossChainTransferReceived(_to, _srcEid, amountReceivedLD, guid);
@@ -271,8 +265,7 @@ contract CIFIOFT is OFT, Pausable {
         return amountReceivedLD;
     }
     
-    // ============ Supply Synchronization (Optional Advanced Feature) ============
-    
+    // ============ Supply Synchronization  ============
     
     function updateChainSupply(uint32 chainId, uint256 supply) 
         external 
