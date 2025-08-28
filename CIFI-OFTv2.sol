@@ -80,19 +80,13 @@ contract CIFIOFT is OFT, Pausable {
     
     // ============ Emergency Controls ============
     
-    /**
-     * @notice Pauses all token operations including transfers and bridging
-     * @dev Can only be called by owner
-     */
+    
     function pause() external onlyOwner {
         _pause();
         emit EmergencyPause(msg.sender, block.timestamp);
     }
     
-    /**
-     * @notice Unpauses all token operations
-     * @dev Can only be called by owner
-     */
+    
     function unpause() external onlyOwner {
         _unpause();
         emit EmergencyUnpause(msg.sender, block.timestamp);
@@ -100,10 +94,7 @@ contract CIFIOFT is OFT, Pausable {
     
     // ============ Supply Management ============
     
-    /**
-     * @notice Enables or disables minting functionality
-     * @param _enabled True to enable, false to disable
-     */
+    
     function setMintingEnabled(bool _enabled) external onlyOwner {
         mintingEnabled = _enabled;
         emit MintingStatusChanged(_enabled);
