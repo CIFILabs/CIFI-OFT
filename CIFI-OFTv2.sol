@@ -6,11 +6,7 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol"; 
 import { OFT } from "@layerzerolabs/oft-evm/contracts/OFT.sol";
 
-/**
- * @title CIFIOFT
- * @notice Omnichain Fungible Token with enhanced supply management and emergency controls
- * @dev Implements cross-chain token transfers via LayerZero with proper supply tracking
- */
+
 contract CIFIOFT is OFT, Pausable {
     // ============ Supply Management State ============
     uint256 public immutable maxSupply;
@@ -53,17 +49,13 @@ contract CIFIOFT is OFT, Pausable {
     
     // ============ Modifiers ============
     
-    /**
-     * @notice Ensures function can only be called on the home chain
-     */
+
     modifier onlyHomeChain() {
         if (block.chainid != homeChainId) revert NotHomeChain();
         _;
     }
     
-    /**
-     * @notice Ensures bridging is enabled
-     */
+    
     modifier whenBridgingEnabled() {
         if (!bridgingEnabled) revert BridgingDisabled();
         _;
@@ -117,19 +109,13 @@ contract CIFIOFT is OFT, Pausable {
         emit MintingStatusChanged(_enabled);
     }
     
-    /**
-     * @notice Enables or disables burning functionality
-     * @param _enabled True to enable, false to disable
-     */
+    
     function setBurningEnabled(bool _enabled) external onlyOwner {
         burningEnabled = _enabled;
         emit BurningStatusChanged(_enabled);
     }
     
-    /**
-     * @notice Enables or disables cross-chain bridging
-     * @param _enabled True to enable, false to disable
-     */
+    
     function setBridgingEnabled(bool _enabled) external onlyOwner {
         bridgingEnabled = _enabled;
         emit BridgingStatusChanged(_enabled);
@@ -137,12 +123,7 @@ contract CIFIOFT is OFT, Pausable {
     
     // ============ Token Functions ============
     
-    /**
-     * @notice Mints new tokens (only on home chain)
-     * @param to Recipient address
-     * @param amount Amount to mint
-     * @dev Can only mint on the designated home chain to maintain global supply cap
-     */
+    
     function mint(address to, uint256 amount) 
         external 
         onlyOwner 
@@ -168,10 +149,7 @@ contract CIFIOFT is OFT, Pausable {
         emit ChainSupplyUpdated(uint32(block.chainid), chainSupply[uint32(block.chainid)]);
     }
     
-    /**
-     * @notice Burns tokens from the caller's balance
-     * @param amount Amount to burn
-     */
+    
     function burn(uint256 amount) external whenNotPaused {
         if (!burningEnabled) revert BurningDisabled();
         
@@ -184,11 +162,7 @@ contract CIFIOFT is OFT, Pausable {
         emit ChainSupplyUpdated(uint32(block.chainid), chainSupply[uint32(block.chainid)]);
     }
     
-    /**
-     * @notice Burns tokens from a specific account (requires approval)
-     * @param from Account to burn from
-     * @param amount Amount to burn
-     */
+    
     function burnFrom(address from, uint256 amount) 
         external 
         whenNotPaused 
@@ -208,10 +182,7 @@ contract CIFIOFT is OFT, Pausable {
     
     // ============ View Functions ============
     
-    /**
-     * @notice Returns the remaining mintable supply
-     * @return Amount that can still be minted (only relevant on home chain)
-     */
+    
     function mintableSupply() public view returns (uint256) {
         // Only home chain can mint
         if (block.chainid != homeChainId) return 0;
@@ -223,11 +194,7 @@ contract CIFIOFT is OFT, Pausable {
         return maxSupply - current;
     }
     
-    /**
-     * @notice Checks if a specific amount can be minted
-     * @param amount Amount to check
-     * @return True if the amount can be minted
-     */
+    
     function canMint(uint256 amount) public view returns (bool) {
         if (block.chainid != homeChainId) return false;
         if (!mintingEnabled) return false;
@@ -235,27 +202,19 @@ contract CIFIOFT is OFT, Pausable {
         return totalSupply() + amount <= maxSupply;
     }
     
-    /**
-     * @notice Returns whether this is the home chain
-     * @return True if current chain is the home chain
-     */
+    
     function isHomeChain() public view returns (bool) {
         return block.chainid == homeChainId;
     }
     
-    /**
-     * @notice Gets the current chain's supply
-     * @return Current supply on this chain
-     */
+    
     function currentChainSupply() public view returns (uint256) {
         return totalSupply();
     }
     
     // ============ Pausable Overrides ============
     
-    /**
-     * @dev Override transfer to add pause functionality
-     */
+    
     function transfer(address to, uint256 value) 
         public 
         override 
@@ -265,9 +224,7 @@ contract CIFIOFT is OFT, Pausable {
         return super.transfer(to, value);
     }
     
-    /**
-     * @dev Override transferFrom to add pause functionality
-     */
+    
     function transferFrom(address from, address to, uint256 value) 
         public 
         override 
@@ -279,13 +236,7 @@ contract CIFIOFT is OFT, Pausable {
     
     // ============ OFT Overrides for Cross-Chain ============
     
-    /**
-     * @dev Internal function to handle outgoing cross-chain transfers
-     * @param _from Sender address
-     * @param _amountLD Amount in local decimals
-     * @param _minAmountLD Minimum amount to receive
-     * @param _dstEid Destination endpoint ID
-     */
+    
     function _debit(
         address _from,
         uint256 _amountLD,
@@ -309,12 +260,7 @@ contract CIFIOFT is OFT, Pausable {
         return (amountSentLD, amountReceivedLD);
     }
     
-    /**
-     * @dev Internal function to handle incoming cross-chain transfers
-     * @param _to Recipient address
-     * @param _amountLD Amount in local decimals
-     * @param _srcEid Source endpoint ID
-     */
+    
     function _credit(
         address _to,
         uint256 _amountLD,
@@ -336,12 +282,7 @@ contract CIFIOFT is OFT, Pausable {
     
     // ============ Supply Synchronization (Optional Advanced Feature) ============
     
-    /**
-     * @notice Updates supply tracking for a specific chain (owner only)
-     * @param chainId Chain ID to update
-     * @param supply New supply value
-     * @dev This is for manual correction if supply tracking gets out of sync
-     */
+    
     function updateChainSupply(uint32 chainId, uint256 supply) 
         external 
         onlyOwner 
